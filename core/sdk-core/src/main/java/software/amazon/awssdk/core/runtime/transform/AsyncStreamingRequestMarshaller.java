@@ -15,45 +15,27 @@
 
 package software.amazon.awssdk.core.runtime.transform;
 
-import static software.amazon.awssdk.http.Header.CONTENT_TYPE;
-import static software.amazon.awssdk.utils.Validate.paramNotNull;
-
-import java.util.Optional;
 import software.amazon.awssdk.annotations.SdkProtectedApi;
-import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.http.SdkHttpFullRequest;
-import software.amazon.awssdk.utils.StringUtils;
 
 /**
- * Augments a {@link Marshaller} to add contents for a streamed request.
+ * Augments a {@link Marshaller} to add contents for an async streamed request.
  *
  * @param <T> Type of POJO being marshalled.
  */
 @SdkProtectedApi
-public final class StreamingRequestMarshaller<T> implements Marshaller<T> {
+public final class AsyncStreamingRequestMarshaller<T> implements Marshaller<T> {
 
     private final Marshaller<T> delegateMarshaller;
-    private final RequestBody requestBody;
+    private final AsyncRequestBody asyncRequestBody;
     private final boolean requiresLength;
     private final boolean transferEncoding;
     private final boolean useHttp2;
 
-    /**
-     * @param delegate    POJO marshaller (for path/query/header members).
-     * @param requestBody {@link RequestBody} representing HTTP contents.
-     */
-    @Deprecated
-    public StreamingRequestMarshaller(Marshaller<T> delegate, RequestBody requestBody) {
-        this.delegateMarshaller = paramNotNull(delegate, "delegate");
-        this.requestBody = paramNotNull(requestBody, "requestBody");
-        this.requiresLength = false;
-        this.transferEncoding = false;
-        this.useHttp2 = false;
-    }
-
-    private StreamingRequestMarshaller(Builder builder) {
+    private AsyncStreamingRequestMarshaller(Builder builder) {
         this.delegateMarshaller = builder.delegateMarshaller;
-        this.requestBody = builder.requestBody;
+        this.asyncRequestBody = builder.asyncRequestBody;
         this.requiresLength = builder.requiresLength;
         this.transferEncoding = builder.transferEncoding;
         this.useHttp2 = builder.useHttp2;
@@ -66,28 +48,19 @@ public final class StreamingRequestMarshaller<T> implements Marshaller<T> {
     @Override
     public SdkHttpFullRequest marshall(T in) {
         SdkHttpFullRequest.Builder marshalled = delegateMarshaller.marshall(in).toBuilder();
-        marshalled.contentStreamProvider(requestBody.contentStreamProvider());
-        String contentType = marshalled.firstMatchingHeader(CONTENT_TYPE)
-                                       .orElse(null);
-        if (StringUtils.isEmpty(contentType)) {
-            marshalled.putHeader(CONTENT_TYPE, requestBody.contentType());
-        }
 
-        // Currently, SDK always require content length in RequestBody. So we always
-        // send Content-Length header for sync APIs
-        // This change will be useful if SDK relaxes the content-length requirement in RequestBody
-        StreamingMarshallerUtil.addHeaders(marshalled, Optional.of(requestBody.contentLength()),
-                                           requiresLength, transferEncoding, useHttp2);
+        StreamingMarshallerUtil.addHeaders(marshalled, asyncRequestBody.contentLength(), requiresLength,
+                                           transferEncoding, useHttp2);
 
         return marshalled.build();
     }
 
     /**
-     * Builder class to build {@link StreamingRequestMarshaller} object.
+     * Builder class to build {@link AsyncStreamingRequestMarshaller} object.
      */
     public static final class Builder {
         private Marshaller delegateMarshaller;
-        private RequestBody requestBody;
+        private AsyncRequestBody asyncRequestBody;
         private boolean requiresLength = Boolean.FALSE;
         private boolean transferEncoding = Boolean.FALSE;
         private boolean useHttp2 = Boolean.FALSE;
@@ -105,11 +78,11 @@ public final class StreamingRequestMarshaller<T> implements Marshaller<T> {
         }
 
         /**
-         * @param requestBody {@link RequestBody} representing the HTTP payload
+         * @param asyncRequestBody {@link AsyncRequestBody} representing the HTTP payload
          * @return This object for method chaining
          */
-        public Builder requestBody(RequestBody requestBody) {
-            this.requestBody = requestBody;
+        public Builder asyncRequestBody(AsyncRequestBody asyncRequestBody) {
+            this.asyncRequestBody = asyncRequestBody;
             return this;
         }
 
@@ -140,8 +113,8 @@ public final class StreamingRequestMarshaller<T> implements Marshaller<T> {
             return this;
         }
 
-        public <T> StreamingRequestMarshaller<T> build() {
-            return new StreamingRequestMarshaller<>(this);
+        public <T> AsyncStreamingRequestMarshaller<T> build() {
+            return new AsyncStreamingRequestMarshaller<>(this);
         }
     }
 }

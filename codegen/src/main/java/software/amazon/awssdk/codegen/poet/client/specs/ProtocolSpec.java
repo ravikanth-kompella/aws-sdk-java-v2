@@ -15,6 +15,7 @@
 
 package software.amazon.awssdk.codegen.poet.client.specs;
 
+import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
@@ -27,8 +28,11 @@ import software.amazon.awssdk.codegen.model.intermediate.IntermediateModel;
 import software.amazon.awssdk.codegen.model.intermediate.OperationModel;
 import software.amazon.awssdk.codegen.model.intermediate.ShapeModel;
 import software.amazon.awssdk.codegen.model.intermediate.ShapeType;
+import software.amazon.awssdk.codegen.model.service.AuthType;
 import software.amazon.awssdk.codegen.poet.PoetExtensions;
 import software.amazon.awssdk.core.client.handler.SyncClientHandler;
+import software.amazon.awssdk.core.runtime.transform.AsyncStreamingRequestMarshaller;
+import software.amazon.awssdk.core.runtime.transform.StreamingRequestMarshaller;
 import software.amazon.awssdk.protocols.core.ExceptionMetadata;
 import software.amazon.awssdk.utils.StringUtils;
 
@@ -90,5 +94,68 @@ public interface ProtocolSpec {
         return opModel.getEndpointDiscovery() != null
                ? ".discoveredEndpoint(cachedEndpoint)\n"
                : "";
+    }
+
+
+    /**
+     * For sync streaming operations, wrap request marshaller in {@link StreamingRequestMarshaller} class.
+     */
+     default CodeBlock syncStreamingMarshaller(IntermediateModel model, OperationModel opModel, ClassName marshaller) {
+        CodeBlock.Builder builder = CodeBlock
+            .builder()
+            .add("$T.builder().delegateMarshaller(new $T(protocolFactory))", StreamingRequestMarshaller.class, marshaller)
+            .add(".requestBody(requestBody)");
+
+        // Set requires length
+        if (opModel.hasRequiresLengthInInput()) {
+            builder.add(".requiresLength(true)");
+        }
+         
+        if (AuthType.V4_UNSIGNED_BODY.equals(opModel.getAuthType())) {
+            builder.add(".transferEncoding(true)");
+        }
+
+        if (model.getMetadata().supportsH2()) {
+            builder.add(".useHttp2(true)");
+        }
+
+        builder.add(".build()");
+
+        return builder.build();
+    }
+
+    default CodeBlock asyncMarshaller(IntermediateModel model, OperationModel opModel, ClassName marshaller,
+                                     String protocolFactory) {
+        if (opModel.hasStreamingInput()) {
+            return asyncStreamingMarshaller(model, opModel, marshaller, protocolFactory);
+        } else {
+            return CodeBlock.builder().add("new $T($L)", marshaller, protocolFactory).build();
+        }
+    }
+
+    default CodeBlock asyncStreamingMarshaller(IntermediateModel model, OperationModel opModel,
+                                                      ClassName marshaller, String protocolFactory) {
+        CodeBlock.Builder builder = CodeBlock
+            .builder()
+            .add("$T.builder().delegateMarshaller(new $T($L))", AsyncStreamingRequestMarshaller.class,
+                 marshaller, protocolFactory)
+            .add(".asyncRequestBody(requestBody)");
+
+        // Set requires length
+        if (opModel.hasRequiresLengthInInput()) {
+            builder.add(".requiresLength(true)");
+        }
+
+        if (AuthType.V4_UNSIGNED_BODY.equals(opModel.getAuthType())) {
+            builder.add(".transferEncoding(true)");
+        }
+
+        if (model.getMetadata().supportsH2()) {
+            builder.add(".useHttp2(true)");
+        }
+
+        builder.add(".build()");
+
+        return builder.build();
     }
 }

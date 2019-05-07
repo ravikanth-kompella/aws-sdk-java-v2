@@ -6744,7 +6744,8 @@
         "Body":{
           "shape":"Body",
           "documentation":"<p>Object data.</p>",
-          "streaming":true
+          "streaming":true,
+          "requiresLength":true
         },
         "Bucket":{
           "shape":"BucketName",
@@ -8211,7 +8212,8 @@
         "Body":{
           "shape":"Body",
           "documentation":"<p>Object data.</p>",
-          "streaming":true
+          "streaming":true,
+          "requiresLength":true
         },
         "Bucket":{
           "shape":"BucketName",
