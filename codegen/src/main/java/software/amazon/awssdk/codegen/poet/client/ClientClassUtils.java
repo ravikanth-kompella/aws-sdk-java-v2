@@ -30,13 +30,10 @@ import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
 import software.amazon.awssdk.codegen.model.intermediate.IntermediateModel;
 import software.amazon.awssdk.codegen.model.intermediate.OperationModel;
 import software.amazon.awssdk.codegen.model.intermediate.ShapeModel;
-import software.amazon.awssdk.codegen.model.service.AuthType;
 import software.amazon.awssdk.codegen.model.service.HostPrefixProcessor;
 import software.amazon.awssdk.codegen.poet.PoetExtensions;
 import software.amazon.awssdk.codegen.poet.PoetUtils;
 import software.amazon.awssdk.core.ApiName;
-import software.amazon.awssdk.core.runtime.transform.AsyncStreamingRequestMarshaller;
-import software.amazon.awssdk.core.runtime.transform.StreamingRequestMarshaller;
 import software.amazon.awssdk.core.signer.Signer;
 import software.amazon.awssdk.core.util.VersionInfo;
 import software.amazon.awssdk.utils.StringUtils;
@@ -195,7 +192,6 @@ final class ClientClassUtils {
 
         return builder.build();
     }
-
 
     /**
      * Given operation and c2j name, returns the String that represents calling the

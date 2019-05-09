@@ -100,48 +100,29 @@ public interface ProtocolSpec {
     /**
      * For sync streaming operations, wrap request marshaller in {@link StreamingRequestMarshaller} class.
      */
-     default CodeBlock syncStreamingMarshaller(IntermediateModel model, OperationModel opModel, ClassName marshaller) {
-        CodeBlock.Builder builder = CodeBlock
-            .builder()
-            .add("$T.builder().delegateMarshaller(new $T(protocolFactory))", StreamingRequestMarshaller.class, marshaller)
-            .add(".requestBody(requestBody)");
-
-        // Set requires length
-        if (opModel.hasRequiresLengthInInput()) {
-            builder.add(".requiresLength(true)");
-        }
-         
-        if (AuthType.V4_UNSIGNED_BODY.equals(opModel.getAuthType())) {
-            builder.add(".transferEncoding(true)");
-        }
-
-        if (model.getMetadata().supportsH2()) {
-            builder.add(".useHttp2(true)");
-        }
-
-        builder.add(".build()");
-
-        return builder.build();
+    default CodeBlock syncStreamingMarshaller(IntermediateModel model, OperationModel opModel, ClassName marshaller) {
+        return streamingMarshallerCode(model, opModel, marshaller, "protocolFactory", false);
     }
 
     default CodeBlock asyncMarshaller(IntermediateModel model, OperationModel opModel, ClassName marshaller,
                                      String protocolFactory) {
         if (opModel.hasStreamingInput()) {
-            return asyncStreamingMarshaller(model, opModel, marshaller, protocolFactory);
+            return streamingMarshallerCode(model, opModel, marshaller, protocolFactory, true);
         } else {
             return CodeBlock.builder().add("new $T($L)", marshaller, protocolFactory).build();
         }
     }
 
-    default CodeBlock asyncStreamingMarshaller(IntermediateModel model, OperationModel opModel,
-                                                      ClassName marshaller, String protocolFactory) {
+    default CodeBlock streamingMarshallerCode(IntermediateModel model, OperationModel opModel, ClassName marshaller,
+                                              String protocolFactory, boolean isAsync) {
         CodeBlock.Builder builder = CodeBlock
             .builder()
-            .add("$T.builder().delegateMarshaller(new $T($L))", AsyncStreamingRequestMarshaller.class,
-                 marshaller, protocolFactory)
-            .add(".asyncRequestBody(requestBody)");
+            .add("$T.builder().delegateMarshaller(new $T($L))",
+                 isAsync ? AsyncStreamingRequestMarshaller.class : StreamingRequestMarshaller.class,
+                 marshaller,
+                 protocolFactory)
+            .add(".$L(requestBody)", isAsync ? "asyncRequestBody" : "requestBody");
 
-        // Set requires length
         if (opModel.hasRequiresLengthInInput()) {
             builder.add(".requiresLength(true)");
         }

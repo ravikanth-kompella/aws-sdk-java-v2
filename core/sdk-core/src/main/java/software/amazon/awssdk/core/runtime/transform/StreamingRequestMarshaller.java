@@ -16,10 +16,10 @@
 package software.amazon.awssdk.core.runtime.transform;
 
 import static software.amazon.awssdk.http.Header.CONTENT_TYPE;
-import static software.amazon.awssdk.utils.Validate.paramNotNull;
 
 import java.util.Optional;
 import software.amazon.awssdk.annotations.SdkProtectedApi;
+import software.amazon.awssdk.core.internal.transform.AbstractStreamingRequestMarshaller;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.SdkHttpFullRequest;
 import software.amazon.awssdk.utils.StringUtils;
@@ -30,33 +30,13 @@ import software.amazon.awssdk.utils.StringUtils;
  * @param <T> Type of POJO being marshalled.
  */
 @SdkProtectedApi
-public final class StreamingRequestMarshaller<T> implements Marshaller<T> {
+public final class StreamingRequestMarshaller<T> extends AbstractStreamingRequestMarshaller<T> {
 
-    private final Marshaller<T> delegateMarshaller;
     private final RequestBody requestBody;
-    private final boolean requiresLength;
-    private final boolean transferEncoding;
-    private final boolean useHttp2;
-
-    /**
-     * @param delegate    POJO marshaller (for path/query/header members).
-     * @param requestBody {@link RequestBody} representing HTTP contents.
-     */
-    @Deprecated
-    public StreamingRequestMarshaller(Marshaller<T> delegate, RequestBody requestBody) {
-        this.delegateMarshaller = paramNotNull(delegate, "delegate");
-        this.requestBody = paramNotNull(requestBody, "requestBody");
-        this.requiresLength = false;
-        this.transferEncoding = false;
-        this.useHttp2 = false;
-    }
 
     private StreamingRequestMarshaller(Builder builder) {
-        this.delegateMarshaller = builder.delegateMarshaller;
+        super(builder);
         this.requestBody = builder.requestBody;
-        this.requiresLength = builder.requiresLength;
-        this.transferEncoding = builder.transferEncoding;
-        this.useHttp2 = builder.useHttp2;
     }
 
     public static Builder builder() {
@@ -76,8 +56,7 @@ public final class StreamingRequestMarshaller<T> implements Marshaller<T> {
         // Currently, SDK always require content length in RequestBody. So we always
         // send Content-Length header for sync APIs
         // This change will be useful if SDK relaxes the content-length requirement in RequestBody
-        StreamingMarshallerUtil.addHeaders(marshalled, Optional.of(requestBody.contentLength()),
-                                           requiresLength, transferEncoding, useHttp2);
+        addHeaders(marshalled, Optional.of(requestBody.contentLength()), requiresLength, transferEncoding, useHttp2);
 
         return marshalled.build();
     }
@@ -85,24 +64,8 @@ public final class StreamingRequestMarshaller<T> implements Marshaller<T> {
     /**
      * Builder class to build {@link StreamingRequestMarshaller} object.
      */
-    public static final class Builder {
-        private Marshaller delegateMarshaller;
+    public static final class Builder extends AbstractStreamingRequestMarshaller.Builder<Builder> {
         private RequestBody requestBody;
-        private boolean requiresLength = Boolean.FALSE;
-        private boolean transferEncoding = Boolean.FALSE;
-        private boolean useHttp2 = Boolean.FALSE;
-
-        private Builder() {
-        }
-
-        /**
-         * @param delegateMarshaller POJO marshaller (for path/query/header members)
-         * @return This object for method chaining
-         */
-        public Builder delegateMarshaller(Marshaller delegateMarshaller) {
-            this.delegateMarshaller = delegateMarshaller;
-            return this;
-        }
 
         /**
          * @param requestBody {@link RequestBody} representing the HTTP payload
@@ -110,33 +73,6 @@ public final class StreamingRequestMarshaller<T> implements Marshaller<T> {
          */
         public Builder requestBody(RequestBody requestBody) {
             this.requestBody = requestBody;
-            return this;
-        }
-
-        /**
-         * @param requiresLength boolean value indicating if Content-Length header is required in the request
-         * @return This object for method chaining
-         */
-        public Builder requiresLength(boolean requiresLength) {
-            this.requiresLength = requiresLength;
-            return this;
-        }
-
-        /**
-         * @param transferEncoding boolean value indicating if Transfer-Encoding: chunked header is required in the request
-         * @return This object for method chaining
-         */
-        public Builder transferEncoding(boolean transferEncoding) {
-            this.transferEncoding = transferEncoding;
-            return this;
-        }
-
-        /**
-         * @param useHttp2 boolean value indicating if request uses HTTP 2 protocol
-         * @return This object for method chaining
-         */
-        public Builder useHttp2(boolean useHttp2) {
-            this.useHttp2 = useHttp2;
             return this;
         }
 

@@ -37,7 +37,6 @@ import software.amazon.awssdk.codegen.model.intermediate.Metadata;
 import software.amazon.awssdk.codegen.model.intermediate.OperationModel;
 import software.amazon.awssdk.codegen.model.intermediate.Protocol;
 import software.amazon.awssdk.codegen.model.intermediate.ShapeModel;
-import software.amazon.awssdk.codegen.model.service.AuthType;
 import software.amazon.awssdk.codegen.poet.PoetExtensions;
 import software.amazon.awssdk.codegen.poet.eventstream.EventStreamUtils;
 import software.amazon.awssdk.core.SdkResponse;
@@ -46,8 +45,6 @@ import software.amazon.awssdk.core.client.handler.AttachHttpMetadataResponseHand
 import software.amazon.awssdk.core.client.handler.ClientExecutionParams;
 import software.amazon.awssdk.core.http.HttpResponseHandler;
 import software.amazon.awssdk.core.protocol.VoidSdkResponse;
-import software.amazon.awssdk.core.runtime.transform.AsyncStreamingRequestMarshaller;
-import software.amazon.awssdk.core.runtime.transform.StreamingRequestMarshaller;
 import software.amazon.awssdk.protocols.cbor.AwsCborProtocolFactory;
 import software.amazon.awssdk.protocols.ion.AwsIonProtocolFactory;
 import software.amazon.awssdk.protocols.json.AwsJsonProtocol;

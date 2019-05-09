@@ -2380,8 +2380,7 @@
     },
     "Stream":{
       "type":"blob",
-      "streaming":true,
-      "requiresLength":true
+      "streaming":true
     },
     "TagKey":{"type":"string"},
     "TagKeyList":{

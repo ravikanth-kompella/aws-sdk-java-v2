@@ -17,6 +17,7 @@ package software.amazon.awssdk.core.runtime.transform;
 
 import software.amazon.awssdk.annotations.SdkProtectedApi;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.core.internal.transform.AbstractStreamingRequestMarshaller;
 import software.amazon.awssdk.http.SdkHttpFullRequest;
 
 /**
@@ -25,20 +26,13 @@ import software.amazon.awssdk.http.SdkHttpFullRequest;
  * @param <T> Type of POJO being marshalled.
  */
 @SdkProtectedApi
-public final class AsyncStreamingRequestMarshaller<T> implements Marshaller<T> {
+public final class AsyncStreamingRequestMarshaller<T> extends AbstractStreamingRequestMarshaller<T> {
 
-    private final Marshaller<T> delegateMarshaller;
     private final AsyncRequestBody asyncRequestBody;
-    private final boolean requiresLength;
-    private final boolean transferEncoding;
-    private final boolean useHttp2;
 
     private AsyncStreamingRequestMarshaller(Builder builder) {
-        this.delegateMarshaller = builder.delegateMarshaller;
+        super(builder);
         this.asyncRequestBody = builder.asyncRequestBody;
-        this.requiresLength = builder.requiresLength;
-        this.transferEncoding = builder.transferEncoding;
-        this.useHttp2 = builder.useHttp2;
     }
 
     public static Builder builder() {
@@ -49,8 +43,7 @@ public final class AsyncStreamingRequestMarshaller<T> implements Marshaller<T> {
     public SdkHttpFullRequest marshall(T in) {
         SdkHttpFullRequest.Builder marshalled = delegateMarshaller.marshall(in).toBuilder();
 
-        StreamingMarshallerUtil.addHeaders(marshalled, asyncRequestBody.contentLength(), requiresLength,
-                                           transferEncoding, useHttp2);
+        addHeaders(marshalled, asyncRequestBody.contentLength(), requiresLength, transferEncoding, useHttp2);
 
         return marshalled.build();
     }
@@ -58,24 +51,9 @@ public final class AsyncStreamingRequestMarshaller<T> implements Marshaller<T> {
     /**
      * Builder class to build {@link AsyncStreamingRequestMarshaller} object.
      */
-    public static final class Builder {
-        private Marshaller delegateMarshaller;
+    public static final class Builder extends AbstractStreamingRequestMarshaller.Builder<Builder> {
+
         private AsyncRequestBody asyncRequestBody;
-        private boolean requiresLength = Boolean.FALSE;
-        private boolean transferEncoding = Boolean.FALSE;
-        private boolean useHttp2 = Boolean.FALSE;
-
-        private Builder() {
-        }
-
-        /**
-         * @param delegateMarshaller POJO marshaller (for path/query/header members)
-         * @return This object for method chaining
-         */
-        public Builder delegateMarshaller(Marshaller delegateMarshaller) {
-            this.delegateMarshaller = delegateMarshaller;
-            return this;
-        }
 
         /**
          * @param asyncRequestBody {@link AsyncRequestBody} representing the HTTP payload
@@ -83,33 +61,6 @@ public final class AsyncStreamingRequestMarshaller<T> implements Marshaller<T> {
          */
         public Builder asyncRequestBody(AsyncRequestBody asyncRequestBody) {
             this.asyncRequestBody = asyncRequestBody;
-            return this;
-        }
-
-        /**
-         * @param requiresLength boolean value indicating if Content-Length header is required in the request
-         * @return This object for method chaining
-         */
-        public Builder requiresLength(boolean requiresLength) {
-            this.requiresLength = requiresLength;
-            return this;
-        }
-
-        /**
-         * @param transferEncoding boolean value indicating if Transfer-Encoding: chunked header is required in the request
-         * @return This object for method chaining
-         */
-        public Builder transferEncoding(boolean transferEncoding) {
-            this.transferEncoding = transferEncoding;
-            return this;
-        }
-
-        /**
-         * @param useHttp2 boolean value indicating if request uses HTTP 2 protocol
-         * @return This object for method chaining
-         */
-        public Builder useHttp2(boolean useHttp2) {
-            this.useHttp2 = useHttp2;
             return this;
         }
 

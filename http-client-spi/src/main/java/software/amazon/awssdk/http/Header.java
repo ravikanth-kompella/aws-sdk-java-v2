@@ -31,6 +31,8 @@ public final class Header {
 
     public static final String TRANSFER_ENCODING = "Transfer-Encoding";
 
+    public static final String CHUNKED = "chunked";
+
     private Header() {
     }
 
